@@ -38,5 +38,6 @@ setuptools.setup(
         'License :: OSI Approved :: BSD License',
         'Intended Audience :: System Administrators',
         'Operating System :: OS Independent',
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
 )
