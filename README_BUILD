@@ -1,0 +1,58 @@
+Requirements on build host
+==========================
+
+This only needs to be performed once.
+
+$ sudo python -m pip install --upgrade pip setuptools wheel
+$ sudo python -m pip install tqdm
+$ sudo python -m pip install --upgrade twine
+
+Build
+=====
+
+* Make your changes.
+* Bump the version in setup.py.
+* Run command:
+      $ python setup.py sdist bdist_wheel
+* Create a tag e.g. v1.0.4.
+  $ git tag -a v1.0.4 -m 'Version 1.0.4'
+  $ git push --tags
+
+Upload package to PYPI
+======================
+
+You should have a .pypirc file in your home directory. With
+the following contents:
+
+[distutils]
+index-servers=
+    test
+    pypi
+
+[test]
+repository = https://test.pypi.org/legacy/
+username = ingatesystems
+
+[pypi]
+username = ingatesystems
+
+[test] is for staging (good to use if want to check that everything is
+fine before uploading to real [pypi] repository.
+
+* You need the password for the ingatesystems user.
+
+For stage (might be buggy, not a stable environment):
+
+* Run the command:
+          $ twine upload -r test dist/ingatesdk-1.0.4*
+
+* Use pip to download the package:
+          $ pip install -i https://testpypi.python.org/pypi ingatesdk
+
+The real deal:
+
+* Run the command:
+          $ twine upload -r pypi dist/ingatesdk-1.0.4*
+
+* Use pip to download the package:
+          $ pip install --upgrade ingatesdk
