@@ -82,4 +82,4 @@ except Exception as e:
 ~~~~
 
 ## Additional information
-* [More information and examples](http://washi.ingate.se:9898/reference_guide_6_2_0.html#_python_sdk)
+* [More information and examples](https://account.ingate.com/manuals/latest/reference_guide.html#_python_sdk)
