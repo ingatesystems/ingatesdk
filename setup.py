@@ -23,7 +23,7 @@ setuptools.setup(
     name=PKGNAME,
     version='1.0.0',
     author='Ingate Systems AB',
-    author_email='info@ingate.com',
+    author_email='fuegodev@ingate.com',
     description='Ingate Python SDK',
     long_description=long_description,
     long_description_content_type='text/markdown',
