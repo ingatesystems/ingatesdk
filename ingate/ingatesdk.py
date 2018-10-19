@@ -1,5 +1,4 @@
-# coding: utf-8 -*-
-
+# -*- coding: utf-8 -*-
 # MIT License
 
 # Copyright (c) 2018 Ingate Systems AB
