@@ -109,7 +109,8 @@ class Client(object):
     LICENSE_FETCH_PATH = '/api/get/license'
     UPGRADE_FETCH_PATH = '/api/get/upgrade'
 
-    def __init__(self, version, scheme, address, user, password, port=''):
+    def __init__(self, version, scheme, address, user, password, port=None,
+                 timeout=None):
         """Initialize the client. Values passed here will later be used when
            communicating with the API.
         """
@@ -128,6 +129,10 @@ class Client(object):
         self.__user = user
         self.__password = password
         self.__port = port
+        if timeout is None:
+            self.__timeout = socket._GLOBAL_DEFAULT_TIMEOUT
+        else:
+            self.__timeout = timeout
         self.__api_path = '/api/%s' % (self.__api_version)
         self.__api_address = self.__get_address_port()
 
@@ -156,7 +161,7 @@ class Client(object):
         else:
             address = self.__address
         if self.__port:
-            address += ':' + self.__port
+            address += ':' + str(self.__port)
         return address
 
     def __fetch_license(self, username, password, liccode, cache_lic=True):
@@ -181,7 +186,8 @@ class Client(object):
 
         params = urlencode(unit_information)
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
-        conn = httplib.HTTPSConnection(self.WEBSYS_FETCH_ADDR)
+        conn = httplib.HTTPSConnection(self.WEBSYS_FETCH_ADDR,
+                                       timeout=self.__timeout)
         try:
             conn.request('POST', self.LICENSE_FETCH_PATH, body=params,
                          headers=headers)
@@ -242,7 +248,8 @@ class Client(object):
 
         params = urlencode(unit_information)
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
-        conn = httplib.HTTPSConnection(self.WEBSYS_FETCH_ADDR)
+        conn = httplib.HTTPSConnection(self.WEBSYS_FETCH_ADDR,
+                                       timeout=self.__timeout)
         try:
             conn.request('POST', self.UPGRADE_FETCH_PATH, body=params,
                          headers=headers)
@@ -285,7 +292,8 @@ class Client(object):
 
         params = urlencode(unit_information)
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
-        conn = httplib.HTTPSConnection(self.WEBSYS_FETCH_ADDR)
+        conn = httplib.HTTPSConnection(self.WEBSYS_FETCH_ADDR,
+                                       timeout=self.__timeout)
         try:
             conn.request('POST', self.UPGRADE_FETCH_PATH, body=params,
                          headers=headers)
@@ -302,17 +310,23 @@ class Client(object):
         return body
 
     def __make_http_request(self, method, path, data=None, no_prefix=False,
-                            send_token=True):
+                            send_token=True, no_response=False):
         """Makes the actual HTTP request. Returns the response body, status
            code, reason and headers.
         """
+        if no_response:
+            timeout = 10
+        else:
+            timeout = self.__timeout
         if self.__scheme == 'http':
-            conn = httplib.HTTPConnection(self.__api_address)
+            conn = httplib.HTTPConnection(self.__api_address,
+                                          timeout=timeout)
         else:
             ctx = None
             if not self.__verify_https:
                 ctx = ssl._create_unverified_context()
-            conn = httplib.HTTPSConnection(self.__api_address, context=ctx)
+            conn = httplib.HTTPSConnection(self.__api_address, context=ctx,
+                                           timeout=timeout)
 
         headers = {}
         if not data:
@@ -342,6 +356,13 @@ class Client(object):
             raise SdkHttpError('Unable to send %s request to %s. %s %s' %
                                (self.__scheme, self.__api_address,
                                 type(e).__name__, str(e)))
+        if no_response:
+            try:
+                resp = conn.getresponse()
+                conn.close()
+            except Exception as e:
+                pass
+            return (200, '', '', '')
         try:
             resp = conn.getresponse()
             body = resp.read()
@@ -406,11 +427,12 @@ class Client(object):
                 errors = None
             raise SdkCommandError(reason, status, errors)
 
-    def __run_command(self, method, command, data=None):
+    def __run_command(self, method, command, data=None, no_response=False):
         """Call __make_http_request() and handle the response.
         """
         try:
-            response = self.__make_http_request(method, command, data=data)
+            response = self.__make_http_request(method, command, data=data,
+                                                no_response=no_response)
         except Exception as e:
             raise e
         return self.__handle_response(response)
@@ -821,10 +843,15 @@ class Client(object):
         self.authenticate()
         return response
 
-    def store_edit(self):
+    def store_edit(self, no_response=False):
         """Store the preliminary configuration to the permanent configuration.
+
+           The 'no_response' argument toggles if a response to the request
+           should be expected or not (default False). This argument must be
+           set to True if you have changed the IP address on the interface that
+           you are currently connecting to.
         """
-        return self.__run_command('PUT', 'store-edit')
+        return self.__run_command('PUT', 'store-edit', no_response=no_response)
 
     def download_config(self, store=False, path=None, filename=None):
         """Download configuration database from the unit.
