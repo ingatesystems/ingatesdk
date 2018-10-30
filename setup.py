@@ -27,7 +27,7 @@ setuptools.setup(
     description='Ingate Python SDK',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://ingate.com',
+    url='https://github.com/ingatesystems/ingatesdk',
     keywords=['ingate', 'sdk', 'api'],
     packages=['ingate'],
     include_package_data=True,
