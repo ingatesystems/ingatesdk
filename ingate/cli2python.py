@@ -4,6 +4,7 @@
 import sys
 import re
 import itertools
+import argparse
 
 from ingate import parser
 
@@ -223,10 +224,17 @@ keywords = {
 
 
 def main(argv):
-    # with open('test_backup.cli', 'r') as inp:
-    with open('hbdummy.cli', 'r') as inp:
-    # with open('regexp.cli', 'r') as inp:
-    # with open('Hallonbergen_2018-11-01T155444.cli', 'r') as inp:
+    parser = (argparse.
+              ArgumentParser(description='Generate Python code from Ingate CLI'
+                             ' backup file.'))
+    parser.add_argument('infile',
+                        help='The CLI file to convert.')
+    parser.add_argument('--outfile',
+                        help='Name of the output python file. If omitted the'
+                        ' name will be \"infile\".py')
+    args = parser.parse_args()
+
+    with open(args.infile, 'r') as inp:
         cli_file = inp.read()
 
     pycode = ''
@@ -352,9 +360,12 @@ def main(argv):
         no_quotes = []
 
     certificates = generate_py_cert(certs)
-    with open('hbdummy.py', 'w') as outp:
-    # with open('regexp.py', 'w') as outp:
-    # with open('Hallonbergen_2018-11-01T155444.py', 'w') as outp:
+    if args.outfile:
+        outfile = args.outfile
+    else:
+        outfile = args.infile + '.py'
+
+    with open(outfile, 'w') as outp:
         data = pycode_tmpl % {'generated': pycode.rstrip('\n'),
                               'certificates': '\n\n'.join(certificates)}
         outp.write(data.encode('utf-8'))
