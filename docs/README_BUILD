@@ -10,6 +10,10 @@ $ sudo python -m pip install --upgrade twine
 Build
 =====
 
+* NOTE: Make sure that your changes work with both python 2 and 3.
+* NOTE: If you only make changes to the utils directory you shouldn't
+        bump the version/build the package and upload it to PyPI.
+
 * Make your changes.
 * Bump the version in setup.py.
 * Run command:
@@ -47,7 +51,7 @@ For stage (might be buggy, not a stable environment):
           $ twine upload -r test dist/ingatesdk-1.0.4*
 
 * Use pip to download the package:
-          $ pip install -i https://testpypi.python.org/pypi ingatesdk
+          $ pip install --upgrade -i https://test.pypi.org/simple/ ingatesdk
 
 The real deal:
 
