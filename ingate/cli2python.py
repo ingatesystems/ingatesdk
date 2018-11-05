@@ -3,7 +3,6 @@
 
 import sys
 import re
-import itertools
 import argparse
 
 from ingate import parser
