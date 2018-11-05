@@ -21,7 +21,7 @@ except:
 
 setuptools.setup(
     name=PKGNAME,
-    version='1.0.7',
+    version='1.0.8',
     author='Ingate Systems AB',
     author_email='fuegodev@ingate.com',
     description='Ingate Python SDK',
