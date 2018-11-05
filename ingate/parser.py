@@ -64,8 +64,6 @@ class Parser(object):
     __re_no_h_whitespace = re.compile("[^" + __h_whitespace_chars + "]+")
 
     def __init__(self, commandline):
-        if not isinstance(commandline, unicode):
-            raise TypeError("commandline parameter must be unicode")
         self.__data = commandline
         self.__i = None
         self.__command = None
@@ -284,7 +282,7 @@ class Parser(object):
             try:
                 param = self.consume(self.__re_bareword, "parameter",
                                      self.at_word_end)
-            except UnexpectedInput, ue:
+            except UnexpectedInput as ue:
                 break
             self.skip_optws_or_comment()
             if not self.at_eol() and not self.looking_at(self.__re_bareword):
@@ -327,7 +325,7 @@ class Parser(object):
             elif bsintro == "\\\n":
                 return ""
             raise UnexpectedInput(self.__i, "valid backslash sequence")
-        except UnexpectedInput, ue:
+        except UnexpectedInput as ue:
             self.__i = start_i
             raise
 
@@ -354,7 +352,7 @@ class Parser(object):
                     qstring += self.read_backslash_sequence()
                     continue
                 continue
-        except (ParseError, ContinuationNeeded), e:
+        except (ParseError, ContinuationNeeded) as e:
             self.__i = start_i
             raise
         return qstring
@@ -384,7 +382,7 @@ class Parser(object):
             value = self.consume(self.__re_bareword,
                                  "assignment value",
                                  postcondition)
-        except UnexpectedInput, ue:
+        except UnexpectedInput as ue:
             value = self.read_quoted_string(postcondition)
         return value
 
@@ -397,7 +395,7 @@ class Parser(object):
                 self.consume("(")
             except InputEnded:
                 raise UnexpectedInput(self.__i, None)
-        except UnexpectedInput, ue:
+        except UnexpectedInput as ue:
             self.__i = start_i
             raise
         start_i = self.__i
@@ -406,7 +404,7 @@ class Parser(object):
             param = self.read_value()
             self.skip_optws_or_comment()
             self.consume(")", "closing parenthesis")
-        except UnexpectedInput, ue:
+        except UnexpectedInput as ue:
             self.__i = start_i
             raise ParseError(*ue.args)
         function = self.known_functions.get(funcname)
@@ -428,10 +426,10 @@ class Parser(object):
                 value = self.read_function_call()
             except UnexpectedFunction:
                 raise
-            except UnexpectedInput, ue:
+            except UnexpectedInput as ue:
                 value = self.read_value(self.at_word_end)
             self.skip_optws_or_comment()
-        except (UnexpectedInput, ContinuationNeeded), e:
+        except (UnexpectedInput, ContinuationNeeded) as e:
             self.__i = start_i
             raise
         return (name, value)

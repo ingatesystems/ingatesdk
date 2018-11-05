@@ -26,6 +26,7 @@
 import sys
 import re
 import argparse
+import io
 
 from ingate import parser
 
@@ -126,8 +127,6 @@ def load_factory(line, noquotes=[]):
 
 
 def add_row(line, noquotes=[]):
-    line = r'%s' % line
-    line = unicode(line)
     cli_parser = parser.Parser(line)
     cli_parser.do_parse()
 
@@ -166,8 +165,6 @@ def add_row(line, noquotes=[]):
 
 
 def modify_row(line, noquotes=[]):
-    line = r'%s' % line
-    line = unicode(line)
     cli_parser = parser.Parser(line)
     cli_parser.do_parse()
 
@@ -255,7 +252,7 @@ def main(argv):
                         ' name will be \"infile\".py')
     args = parser.parse_args()
 
-    with open(args.infile, 'r') as inp:
+    with io.open(args.infile, 'r', encoding='utf-8') as inp:
         cli_file = inp.read()
 
     pycode = ''
@@ -270,11 +267,11 @@ def main(argv):
     no_quotes = []
 
     for line in cli_file.splitlines():
-        line = line.decode('utf-8').strip()
         if len(line) == 0 or line.startswith('#'):
             continue
         if line.startswith('" \\'):
             line = '\\'
+        line = line.strip()
 
         # Certificate
         if begin_cert in line:
@@ -386,10 +383,10 @@ def main(argv):
     else:
         outfile = args.infile + '.py'
 
-    with open(outfile, 'w') as outp:
+    with io.open(outfile, 'w', encoding='utf-8') as outp:
         data = pycode_tmpl % {'generated': pycode.rstrip('\n'),
                               'certificates': '\n\n'.join(certificates)}
-        outp.write(data.encode('utf-8'))
+        outp.write(data)
     return 0
 
 if __name__ == '__main__':
