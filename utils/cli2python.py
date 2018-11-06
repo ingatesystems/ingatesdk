@@ -418,7 +418,7 @@ def main(argv):
                               'address': args.address or '192.168.1.1',
                               'port': args.port or '',
                               'generated': pycode.rstrip('\n'),
-                              'certificates': \n\n'.join(certificates),
+                              'certificates': '\n\n'.join(certificates),
                               'errors': err_out}
         outp.write(data.strip('\n') + '\n')
     return 0
