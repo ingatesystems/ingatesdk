@@ -36,12 +36,12 @@ pycode_tmpl = """#!/usr/bin/python
 import json
 from ingate import ingatesdk
 
-version = 'v1'
-scheme = 'http'
-user = 'alice'
-password = 'foobar'
-address = '192.168.1.1'
-port = ''
+version = '%(version)s'
+scheme = '%(scheme)s'
+user = '%(user)s'
+password = '%(password)s'
+address = '%(address)s'
+port = '%(port)s'
 
 %(certificates)s
 
@@ -56,6 +56,8 @@ print(json.dumps(response, indent=4, separators=(',', ': ')))
 print('')
 
 %(generated)s
+
+%(errors)s
 """
 
 valid_table = re.compile(r'^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$')
@@ -224,6 +226,16 @@ def generate_py_cert(certs):
         response.append(line)
     return response
 
+
+def check_error():
+    response = '# Check for error(s).\n'
+    response += 'response = api_client.list_errors()\n'
+    response += 'if len(response) > 0:\n'
+    response += ('    raise ingatesdk.SdkError(\'There are configuration'
+                 ' issues.\')\n')
+    return response
+
+
 begin_cert = '-----BEGIN CERTIFICATE-----'
 end_cert = '-----END CERTIFICATE-----'
 begin_x509_crl = '-----BEGIN X509 CRL-----'
@@ -250,6 +262,16 @@ def main(argv):
     parser.add_argument('--outfile',
                         help='Name of the output python file. If omitted the'
                         ' name will be \"infile\".py')
+    parser.add_argument('--version', help='The REST API version (v1).')
+    parser.add_argument('--scheme', help='The REST API scheme (http or'
+                        ' https).')
+    parser.add_argument('--user', help='The REST API username.')
+    parser.add_argument('--password', help='The REST API password.')
+    parser.add_argument('--address', help='The address to the unit.')
+    parser.add_argument('--port', help='The port to connect to (default 80 for'
+                        ' http and 443 for https).')
+    parser.add_argument('--check-error', action='store_true',
+                        help='Check for error(s).')
     args = parser.parse_args()
 
     with io.open(args.infile, 'r', encoding='utf-8') as inp:
@@ -383,10 +405,22 @@ def main(argv):
     else:
         outfile = args.infile + '.py'
 
+    if args.check_error:
+        err_out = check_error()
+    else:
+        err_out = ''
+
     with io.open(outfile, 'w', encoding='utf-8') as outp:
-        data = pycode_tmpl % {'generated': pycode.rstrip('\n'),
-                              'certificates': '\n\n'.join(certificates)}
-        outp.write(data)
+        data = pycode_tmpl % {'version': args.version or 'v1',
+                              'scheme': args.scheme or 'http',
+                              'user': args.user or 'alice',
+                              'password': args.password or 'foobar',
+                              'address': args.address or '192.168.1.1',
+                              'port': args.port or '',
+                              'generated': pycode.rstrip('\n'),
+                              'certificates': \n\n'.join(certificates),
+                              'errors': err_out}
+        outp.write(data.strip('\n') + '\n')
     return 0
 
 if __name__ == '__main__':
