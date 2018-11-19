@@ -773,6 +773,18 @@ class Client(object):
         else:
             raise SdkAuthError('Failed to authenticate (%s)' % (reason))
 
+    def destroy_token(self):
+        """Destroy an acquired authentication token. Note, a token will always
+           have an expiry time out (invoking this method will delete the token
+           prematurely).
+        """
+        if not self.__auth_token:
+            raise SdkAuthError('Please authenticate first')
+        response = self.__run_command('PUT', 'destroy-token')
+        self.__token = None
+        self.__auth_token = None
+        return response
+
     def unit_information(self):
         """Get information about the unit.
         """
