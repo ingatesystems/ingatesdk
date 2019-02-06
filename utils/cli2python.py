@@ -43,12 +43,17 @@ user = '%(user)s'
 password = '%(password)s'
 address = '%(address)s'
 port = '%(port)s'
+verify_ssl = %(verify_ssl)s
 
 %(certificates)s
 
 # Create API client.
 api_client = ingatesdk.Client(version, scheme, address, user, password,
                               port=port)
+
+# Verify the peer's HTTPS certificate.
+if not verify_ssl:
+    api_client.skip_verify_certificate()
 
 # Authenticate and get hold of a security token.
 print('Authenticate and get hold of a security token')
@@ -73,6 +78,7 @@ playbook_tmpl = """
       version: %(version)s
       address: "{{ inventory_hostname }}"
       scheme: %(scheme)s
+      verify_ssl: %(verify_ssl)s
       username: %(user)s
       password: %(password)s
       port: %(port)s
@@ -377,6 +383,8 @@ def main(argv):
     parser.add_argument('--address', help='The address to the unit.')
     parser.add_argument('--port', help='The port to connect to (default 80 for'
                         ' http and 443 for https).')
+    parser.add_argument('--skip-verify-certificate', action='store_true',
+                        help='Don\'t verify the peer\'s HTTPS certificate.')
     parser.add_argument('--check-error', action='store_true',
                         help='Check for error(s).')
     parser.add_argument('--playbook', action='store_true',
@@ -532,6 +540,7 @@ def main(argv):
     with io.open(outfile, 'w', encoding='utf-8') as outp:
         data = template % {'version': args.version or 'v1',
                            'scheme': args.scheme or 'http',
+                           'verify_ssl': not args.skip_verify_certificate,
                            'user': args.user or 'alice',
                            'password': args.password or 'foobar',
                            'address': args.address or '192.168.1.1',
