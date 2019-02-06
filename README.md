@@ -84,3 +84,4 @@ except Exception as e:
 ## Additional information
 * [More information and examples](https://account.ingate.com/manuals/latest/reference_guide.html#_python_sdk)
 * [Generate Python code from an Ingate CLI backup file](https://raw.githubusercontent.com/ingatesystems/ingatesdk/master/utils/cli2python.py)
+* [Generate Ansible Playbook from an Ingate CLI backup file](https://raw.githubusercontent.com/ingatesystems/ingatesdk/master/utils/cli2python.py)
