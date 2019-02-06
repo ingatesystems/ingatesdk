@@ -32,6 +32,7 @@ from ingate import parser
 
 pycode_tmpl = """#!/usr/bin/python
 # -*- coding: utf-8 -*-
+# %(header)s
 
 import json
 from ingate import ingatesdk
@@ -54,6 +55,29 @@ print('Authenticate and get hold of a security token')
 response = api_client.authenticate()
 print(json.dumps(response, indent=4, separators=(',', ': ')))
 print('')
+
+%(generated)s
+
+%(errors)s
+"""
+
+playbook_tmpl = """
+# -*- coding: utf-8 -*-
+---
+
+- name: %(header)s
+  hosts: %(address)s
+  connection: local
+  vars:
+    client_rw:
+      version: %(version)s
+      address: "{{ inventory_hostname }}"
+      scheme: %(scheme)s
+      username: %(user)s
+      password: %(password)s
+      port: %(port)s
+%(certificates)s
+  tasks:
 
 %(generated)s
 
@@ -98,7 +122,7 @@ def demangle_ipsec_secret(value):
         return value
 
 
-def clear_table(line, noquotes=[]):
+def clear_table(line, noquotes=[], yaml=False):
     clicmd = line.split(' ')
     table = None
     for part in clicmd[1:]:
@@ -109,26 +133,45 @@ def clear_table(line, noquotes=[]):
         print('Cannot find table name')
         sys.exit(-1)
 
-    response = '# %s\n' % line
-    response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
-    response += 'response = api_client.delete_table(\'%s\')\n' % table
-    response += ('print(json.dumps(response, indent=4,'
-                 ' separators=(\',\', \': \')))\n')
-    response += 'print(\'\')\n\n'
+    if yaml:
+        response = '  - name: %s\n' % line
+        response += '    ig_config:\n'
+        response += '      client: "{{ client_rw }}"\n'
+        response += '      delete: true\n'
+        response += '      table: %s\n' % table
+        response += '    register: result\n'
+        response += '  - debug:\n'
+        response += '      var: result\n\n'
+    else:
+        response = '# %s\n' % line
+        response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
+        response += 'response = api_client.delete_table(\'%s\')\n' % table
+        response += ('print(json.dumps(response, indent=4,'
+                     ' separators=(\',\', \': \')))\n')
+        response += 'print(\'\')\n\n'
     return response
 
 
-def load_factory(line, noquotes=[]):
-    response = '# %s\n' % line
-    response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
-    response += 'response = api_client.load_factory()\n'
-    response += ('print(json.dumps(response, indent=4,'
-                 ' separators=(\',\', \': \')))\n')
-    response += 'print(\'\')\n\n'
+def load_factory(line, noquotes=[], yaml=False):
+    if yaml:
+        response = '  - name: %s\n' % line
+        response += '    ig_config:\n'
+        response += '      client: "{{ client_rw }}"\n'
+        response += '      factory: true\n'
+        response += '    register: result\n'
+        response += '  - debug:\n'
+        response += '      var: result\n\n'
+    else:
+        response = '# %s\n' % line
+        response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
+        response += 'response = api_client.load_factory()\n'
+        response += ('print(json.dumps(response, indent=4,'
+                     ' separators=(\',\', \': \')))\n')
+        response += 'print(\'\')\n\n'
     return response
 
 
-def add_row(line, noquotes=[]):
+def add_row(line, noquotes=[], yaml=False):
     cli_parser = parser.Parser(line)
     cli_parser.do_parse()
 
@@ -148,25 +191,49 @@ def add_row(line, noquotes=[]):
             continue
         if table == 'ipsec.peers' and column == 'secret':
             value = demangle_ipsec_secret(value)
-        if column in noquotes:
-            column_values.append("%s=%s" % (column, escape_string(value)))
+        if yaml:
+            if column in noquotes:
+                column_line = "%s: \"{{ %s }}\""
+                column_values.append(column_line % (column,
+                                                    escape_string(value)))
+            else:
+                column_values.append("%s: \"%s\"" % (column,
+                                                     escape_string(value)))
         else:
-            column_values.append("%s=\"%s\"" % (column, escape_string(value)))
+            if column in noquotes:
+                column_values.append("%s=%s" % (column, escape_string(value)))
+            else:
+                column_values.append("%s=\"%s\"" % (column,
+                                                    escape_string(value)))
     if not column_values:
         print('Cannot find column values')
         sys.exit(-1)
 
-    response = '# %s\n' % line
-    response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
-    add_row_line = 'response = api_client.add_row("%s", %s)\n'
-    response += add_row_line % (table, ', '.join(column_values))
-    response += ('print(json.dumps(response, indent=4,'
-                 ' separators=(\',\', \': \')))\n')
-    response += 'print(\'\')\n\n'
+    if yaml:
+        response = '  # %s\n' % line
+        response = '  - name: "%s"\n' % escape_string(line)
+        response += '    ig_config:\n'
+        response += '      client: "{{ client_rw }}"\n'
+        response += '      add: true\n'
+        response += '      table: %s\n' % table
+        response += '      columns:\n'
+        response += '        %s' % '\n        '.join(column_values)
+        response += '\n    register: result\n'
+        response += '  - debug:\n'
+        response += '      var: result\n'
+        response += '\n'
+    else:
+        response = '# %s\n' % line
+        response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
+        add_row_line = 'response = api_client.add_row("%s", %s)\n'
+        response += add_row_line % (table, ', '.join(column_values))
+        response += ('print(json.dumps(response, indent=4,'
+                     ' separators=(\',\', \': \')))\n')
+        response += 'print(\'\')\n\n'
     return response
 
 
-def modify_row(line, noquotes=[]):
+def modify_row(line, noquotes=[], yaml=False):
     cli_parser = parser.Parser(line)
     cli_parser.do_parse()
 
@@ -194,21 +261,46 @@ def modify_row(line, noquotes=[]):
             continue
         if table == 'ipsec.peers' and column == 'secret':
             value = demangle_ipsec_secret(value)
-        if column in noquotes:
-            column_values.append("%s=%s" % (column, escape_string(value)))
+        if yaml:
+            if column in noquotes:
+                column_line = "%s: \"{{ %s }}\""
+                column_values.append(column_line % (column,
+                                                    escape_string(value)))
+            else:
+                column_values.append("%s: \"%s\"" % (column,
+                                                     escape_string(value)))
         else:
-            column_values.append("%s=\"%s\"" % (column, escape_string(value)))
+            if column in noquotes:
+                column_values.append("%s=%s" % (column, escape_string(value)))
+            else:
+                column_values.append("%s=\"%s\"" % (column,
+                                                    escape_string(value)))
     if not column_values:
         print('Cannot find column values')
         sys.exit(-1)
 
-    response = '# %s\n' % line
-    response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
-    modify_row_line = 'response = api_client.modify_row("%s", rowid=%s, %s)\n'
-    response += modify_row_line % (table, rowid, ', '.join(column_values))
-    response += ('print(json.dumps(response, indent=4,'
-                 ' separators=(\',\', \': \')))\n')
-    response += 'print(\'\')\n\n'
+    if yaml:
+        response = '  # %s\n' % line
+        response = '  - name: "%s"\n' % escape_string(line)
+        response += '    ig_config:\n'
+        response += '      client: "{{ client_rw }}"\n'
+        response += '      modify: true\n'
+        response += '      table: %s\n' % table
+        response += '      rowid: %s\n' % rowid
+        response += '      columns:\n'
+        response += '        %s' % '\n        '.join(column_values)
+        response += '\n    register: result\n'
+        response += '  - debug:\n'
+        response += '      var: result\n'
+        response += '\n'
+    else:
+        response = '# %s\n' % line
+        response += 'print(\'%s\')\n' % (escape_singe_quotes(line))
+        modify_row = 'response = api_client.modify_row("%s", rowid=%s, %s)\n'
+        response += modify_row % (table, rowid, ', '.join(column_values))
+        response += ('print(json.dumps(response, indent=4,'
+                     ' separators=(\',\', \': \')))\n')
+        response += 'print(\'\')\n\n'
     return response
 
 
@@ -224,6 +316,21 @@ def generate_py_cert(certs):
             line += cert
         line += '"""'
         response.append(line)
+    return response
+
+
+def generate_yaml_cert(certs):
+    response = []
+
+    for name, certs in certs.items():
+        line = '    %s: |\n' % name
+        for cert in certs:
+            # IPsec X509 Peer certificate. Remove prefix 'x'.
+            if cert.startswith('x'):
+                cert = cert[1:]
+            for certline in cert.splitlines():
+                line += '      %s\n' % certline
+        response.append(line.rstrip('\n'))
     return response
 
 
@@ -272,12 +379,15 @@ def main(argv):
                         ' http and 443 for https).')
     parser.add_argument('--check-error', action='store_true',
                         help='Check for error(s).')
+    parser.add_argument('--playbook', action='store_true',
+                        help='Generate Ansible Playbook instead of Python'
+                        ' code.')
     args = parser.parse_args()
 
     with io.open(args.infile, 'r', encoding='utf-8') as inp:
         cli_file = inp.read()
 
-    pycode = ''
+    generated = ''
     prevline = None
     begin_cert_state = False
     begin_x509_crl_state = False
@@ -395,31 +505,41 @@ def main(argv):
             print('Cannot find table command %s' % (cmd_name))
             sys.exit(-1)
         cmdfunc = command_info
-        response = cmdfunc(outline, no_quotes)
-        pycode += response
+        response = cmdfunc(outline, no_quotes, yaml=args.playbook)
+        generated += response
         no_quotes = []
 
-    certificates = generate_py_cert(certs)
+    if args.playbook:
+        certificates = generate_yaml_cert(certs)
+        template = playbook_tmpl
+        suffix = '.yaml'
+    else:
+        certificates = generate_py_cert(certs)
+        template = pycode_tmpl
+        suffix = '.py'
+
     if args.outfile:
         outfile = args.outfile
     else:
-        outfile = args.infile + '.py'
+        outfile = args.infile + suffix
 
-    if args.check_error:
+    if args.check_error and not args.playbook:
         err_out = check_error()
     else:
         err_out = ''
 
+    header = 'Generated from CLI file \"%s\"' % args.infile
     with io.open(outfile, 'w', encoding='utf-8') as outp:
-        data = pycode_tmpl % {'version': args.version or 'v1',
-                              'scheme': args.scheme or 'http',
-                              'user': args.user or 'alice',
-                              'password': args.password or 'foobar',
-                              'address': args.address or '192.168.1.1',
-                              'port': args.port or '',
-                              'generated': pycode.rstrip('\n'),
-                              'certificates': '\n\n'.join(certificates),
-                              'errors': err_out}
+        data = template % {'version': args.version or 'v1',
+                           'scheme': args.scheme or 'http',
+                           'user': args.user or 'alice',
+                           'password': args.password or 'foobar',
+                           'address': args.address or '192.168.1.1',
+                           'port': args.port or '',
+                           'generated': generated.rstrip('\n'),
+                           'certificates': '\n\n'.join(certificates),
+                           'errors': err_out,
+                           'header': header}
         outp.write(data.strip('\n') + '\n')
     return 0
 
