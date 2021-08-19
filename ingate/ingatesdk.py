@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # MIT License
 
-# Copyright (c) 2018 Ingate Systems AB
+# Copyright (c) 2021 Ingate Systems AB
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -854,6 +854,16 @@ class Client(object):
         self.wait_webserver(timeout=300)
         self.authenticate()
         return response
+
+    def restart_sip(self):
+        """Restart the SIP module and remove all state, like registrations etc.
+        """
+        return self.__run_command('PUT', 'restart-sip')
+
+    def sip_status(self):
+        """Return SIP status information and metrics.
+        """
+        return self.__run_command('GET', 'sip-status')
 
     def store_edit(self, no_response=False):
         """Store the preliminary configuration to the permanent configuration.
