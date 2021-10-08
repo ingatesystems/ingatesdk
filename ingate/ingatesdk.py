@@ -865,6 +865,11 @@ class Client(object):
         """
         return self.__run_command('GET', 'sip-status')
 
+    def flush_logins(self):
+        """Log out all logged in admin users.
+        """
+        return self.__run_command('PUT', 'flush-logins')
+
     def store_edit(self, no_response=False):
         """Store the preliminary configuration to the permanent configuration.
 
