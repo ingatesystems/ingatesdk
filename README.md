@@ -11,7 +11,7 @@ Change the name of the unit to *Testapi*. Create a *Client* instance. Request a
 security token. Call the method *modify_single_row* in order to change the name
 and print the result. Store the change to the permanent configuration.
 
-~~~~
+~~~~python
 import sys
 
 from ingate import ingatesdk
@@ -46,7 +46,7 @@ except Exception as e:
 ~~~~
 
 ### Apply a base license and upgrade to latest firmware version
-~~~~
+~~~~python
 import sys
 
 from ingate import ingatesdk
