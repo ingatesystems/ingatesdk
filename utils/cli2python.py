@@ -83,8 +83,8 @@ playbook_tmpl = """
       password: %(password)s
       port: %(port)s
 %(certificates)s
-  tasks:
 
+  tasks:
 %(generated)s
 
 %(errors)s
