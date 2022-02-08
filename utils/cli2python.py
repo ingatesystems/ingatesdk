@@ -73,6 +73,10 @@ playbook_tmpl = """
 - name: %(header)s
   hosts: %(address)s
   connection: local
+  collections:
+    - ingatesystems.fuego_modules
+  gather_facts: no
+
   vars:
     client_rw:
       version: %(version)s
@@ -141,7 +145,7 @@ def clear_table(line, noquotes=[], yaml=False):
 
     if yaml:
         response = '  - name: %s\n' % line
-        response += '    ig_config:\n'
+        response += '    fuego_config:\n'
         response += '      client: "{{ client_rw }}"\n'
         response += '      delete: true\n'
         response += '      table: %s\n' % table
@@ -161,7 +165,7 @@ def clear_table(line, noquotes=[], yaml=False):
 def load_factory(line, noquotes=[], yaml=False):
     if yaml:
         response = '  - name: %s\n' % line
-        response += '    ig_config:\n'
+        response += '    fuego_config:\n'
         response += '      client: "{{ client_rw }}"\n'
         response += '      factory: true\n'
         response += '    register: result\n'
@@ -218,7 +222,7 @@ def add_row(line, noquotes=[], yaml=False):
     if yaml:
         response = '  # %s\n' % line
         response = '  - name: "%s"\n' % escape_string(line)
-        response += '    ig_config:\n'
+        response += '    fuego_config:\n'
         response += '      client: "{{ client_rw }}"\n'
         response += '      add: true\n'
         response += '      table: %s\n' % table
@@ -288,7 +292,7 @@ def modify_row(line, noquotes=[], yaml=False):
     if yaml:
         response = '  # %s\n' % line
         response = '  - name: "%s"\n' % escape_string(line)
-        response += '    ig_config:\n'
+        response += '    fuego_config:\n'
         response += '      client: "{{ client_rw }}"\n'
         response += '      modify: true\n'
         response += '      table: %s\n' % table
